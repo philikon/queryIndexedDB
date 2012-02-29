@@ -42,9 +42,10 @@ let BaseQuery = {
     return Union(this, query2);
   },
 
-  query: function (store) {
+  query: function query(store) {
     let request = newRequest();
     let keys;
+    let event = {target: request}; //TODO type? what else?
     request.continue = function continue_() {
       if (!keys) {
         throw "XXX TODO";
@@ -52,14 +53,14 @@ let BaseQuery = {
       let key = keys.shift();
       if (!key) {
         request.result = undefined;
-        request.onsuccess();
+        request.onsuccess(event);
         return;
       }
       let r = store.get(key);
       r.onsuccess = function onsuccess() {
         request.key = key;
         request.result = r.result;
-        request.onsuccess();
+        request.onsuccess(event);
       };
     };
     this.queryKeys(store, function (result) {
@@ -67,6 +68,14 @@ let BaseQuery = {
       request.contine();
     });
     return request;
+  },
+
+  queryKeys: function queryKeys() {
+    //TODO writeme
+  },
+
+  queryAll: function queryAll(store) {
+    //TODO writeme
   }
 };
 
@@ -82,27 +91,27 @@ function Query(index, op, values) {
     let range;
     switch (op) {
       case "eq":
-        range = IDBKeyRange.only(value[0]);
+        range = IDBKeyRange.only(values[0]);
         break;
       case "lt":
-        range = IDBKeyRange.lowerBound(value[0]);
+        range = IDBKeyRange.lowerBound(values[0]);
         break;
       case "lteq":
-        range = IDBKeyRange.lowerBound(value[0]);
+        range = IDBKeyRange.lowerBound(values[0]);
         range.lowerOpen = true;
         break;
       case "gt":
-        range = IDBKeyRange.upperBound(value[0]);
+        range = IDBKeyRange.upperBound(values[0]);
         break;
       case "gteq":
-        range = IDBKeyRange.upperBound(value[0]);
+        range = IDBKeyRange.upperBound(values[0]);
         range.upperOpen = true;
         break;
       case "between":
-        range = IDBKeyRange.bound(value[0], value[1]);
+        range = IDBKeyRange.bound(values[0], values[1]);
         break;
       case "betweeq":
-        range = IDBKeyRange.bound(value[0], value[1]);
+        range = IDBKeyRange.bound(values[0], values[1]);
         range.lowerOpen = range.upperOpen = true;
         break;
     }
@@ -111,10 +120,6 @@ function Query(index, op, values) {
 
   return {
     __proto__: BaseQuery,
-
-    index: index,
-    op: op,
-    value: value,
 
     queryKeys: function queryKeys(store, callback) {
       let negate = false;
@@ -202,11 +207,3 @@ function arrayIntersect(foo, bar) {
     return bar.indexOf(item) != -1;
   });
 }
-
-
-
-// Example
-
-let request = Index("timestamp").lte(Date.now())
-                .and(Index("timestamp").gte(0))
-                .query(store);
