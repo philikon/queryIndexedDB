@@ -17,6 +17,11 @@ function do_execute_soon(func) {
 function do_test_pending() {}
 function do_test_finished() {}
 
+function do_check_eq(left, right) {
+  let pass = left == right;
+  console.log(pass ? "PASS" : "FAIL", left + " == " + right);
+}
+
 const _TEST_FILE = "test.js";
 
 

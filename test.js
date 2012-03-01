@@ -84,9 +84,12 @@ function populateDB(callback) {
   });
 }
 
-function startTxn() {
+function openStore() {
   let txn = gDB.transaction([STORE_NAME], IDBTransaction.READ_ONLY);
-  txn.oncomplete = run_next_test;  
+  txn.oncomplete = run_next_test;
+  txn.onabort = function () {
+    console.error("The transaction was aborted because an error occurred.");
+  };
   let store = txn.objectStore(STORE_NAME);
   return store;
 }
@@ -95,9 +98,42 @@ function run_tests() {
   populateDB(run_next_test);
 }
 
+
+/*** Tests start here ***/
+
+let empty_query = Index("make").eq("Chevrolet");
+function empty_result_onsuccess(event) {
+  do_check_eq(event.target.result, undefined);
+}
+function empty_array_onsuccess(event) {
+  do_check_eq(event.target.result.length, 0);
+}
+
+add_test(function test_empty_openCursor() {
+  let request = empty_query.openCursor(openStore());
+  request.onsuccess = empty_result_onsuccess;
+});
+
+add_test(function test_empty_openKeyCursor() {
+  let request = empty_query.openKeyCursor(openStore());
+  request.onsuccess = empty_result_onsuccess;
+});
+
+add_test(function test_empty_getAll() {
+  let request = empty_query.getAll(openStore());
+  request.onsuccess = empty_array_onsuccess;
+});
+
+add_test(function test_empty_getAllKeys() {
+  let request = empty_query.getAllKeys(openStore());
+  request.onsuccess = empty_array_onsuccess;
+});
+
+
+
 add_test(function test_and_openCursor() {
-  let store = startTxn();
-  let request = Index("make").eq("BMW") 
+  let store = openStore();
+  let request = Index("make").eq("BMW")
                   .and(Index("model").eq("325e")).openCursor(store);
   request.onsuccess = function () {
     let cursor = request.result;
@@ -109,18 +145,16 @@ add_test(function test_and_openCursor() {
 });
 
 add_test(function test_and_getAll() {
-  let store = startTxn();
-  let request = Index("make").eq("BMW") 
+  let store = openStore();
+  let request = Index("make").eq("BMW")
                   .and(Index("model").eq("325e")).getAll(store);
   request.onsuccess = function () {
     console.log(request.result);
   };
 });
 
-add_test(function test_oneof() {
-  let txn = gDB.transaction([STORE_NAME], IDBTransaction.READ_ONLY);
-  let store = txn.objectStore(STORE_NAME);
-
+add_test(function test_oneof_openCursor() {
+  let store = openStore();
   let request = Index("make").oneof("Volkswagen", "Subaru").openCursor(store);
   request.onsuccess = function () {
     let cursor = request.result;
