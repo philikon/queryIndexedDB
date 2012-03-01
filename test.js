@@ -220,6 +220,17 @@ test(
   ["Pikachubaru", "Ferdinand the Bug"]
 );
 
+// between
+test(
+  Index("year").between(1960, 1970),
+  []
+);
+test(
+  Index("year").between(1980, 1990),
+  ["ECTO-1", "ECTO-2", "Cheesy"]
+);
+
+
 // Composite queries
 test(
   Index("make").eq("BMW").and(Index("model").eq("325e")),
