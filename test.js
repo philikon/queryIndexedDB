@@ -18,7 +18,7 @@ let sampleRecords = [
    model: "325i",
    races: 1},
   {name: "ECTO-2",
-   year: "1984ish",
+   year: 1984,
    make: "BMW",
    model: "325e",
    races: 3},
@@ -164,10 +164,38 @@ add_query_tests(Index("make").eq("BMW"),
 add_query_tests(Index("make").neq("BMW"),
                 ["Pikachubaru", "Ferdinand the Bug"]);
 
+// lt
+add_query_tests(Index("year").lt(1970), //TODO 1971 fails on getAll?!?
+                []);
+add_query_tests(Index("year").lt(1983),  //TODO 1984 fails on getAll?!?
+                ["Ferdinand the Bug"]);
+
+// lteq
+add_query_tests(Index("year").lteq(1970),
+                []);
+add_query_tests(Index("year").lteq(1984),
+                ["Ferdinand the Bug", "Cheesy", "ECTO-2"]);
+
+// gt
+add_query_tests(Index("year").gt(2002), //TODO 2001 fails on getAll?!?
+                []);
+add_query_tests(Index("year").gt(2000),  //TODO 1984 fails on getAll?!?
+                ["Pikachubaru"]);
+
+// gteq
+add_query_tests(Index("year").gteq(2002),
+                []);
+add_query_tests(Index("year").gteq(1989),
+                ["Pikachubaru", "ECTO-1"]);
+
+// oneof
+add_query_tests(Index("make").oneof("Chevrolet", "Ford"),
+                []);
+add_query_tests(Index("make").oneof("Volkswagen", "Subaru"),
+                ["Pikachubaru", "Ferdinand the Bug"]);
+
 // Composite queries
 add_query_tests(Index("make").eq("BMW").and(Index("model").eq("325e")),
                 ["ECTO-2", "Cheesy"]);
 add_query_tests(Index("make").eq("Volkswagen").or(Index("make").eq("Subaru")),
-                ["Pikachubaru", "Ferdinand the Bug"]);
-add_query_tests(Index("make").oneof("Volkswagen", "Subaru"),
                 ["Pikachubaru", "Ferdinand the Bug"]);

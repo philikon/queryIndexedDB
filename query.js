@@ -154,17 +154,17 @@ function IndexQuery(indexName, operation, values) {
         range = IDBKeyRange.only(values[0]);
         break;
       case "lt":
-        range = IDBKeyRange.lowerBound(values[0]);
+        range = IDBKeyRange.upperBound(values[0]);
         break;
       case "lteq":
-        range = IDBKeyRange.lowerBound(values[0]);
+        range = IDBKeyRange.upperBound(values[0]);
         range.lowerOpen = true;
         break;
       case "gt":
-        range = IDBKeyRange.upperBound(values[0]);
+        range = IDBKeyRange.lowerBound(values[0]);
         break;
       case "gteq":
-        range = IDBKeyRange.upperBound(values[0]);
+        range = IDBKeyRange.lowerBound(values[0]);
         range.upperOpen = true;
         break;
       case "between":
