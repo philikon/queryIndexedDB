@@ -1,0 +1,54 @@
+A small query library for IndexedDB
+
+
+Query construction
+------------------
+
+A query consists of the name of an index, an operation, and a
+comparison value. This is how you construct a query:
+
+  Index("make").oneof("BMW", "Volkswagen")
+
+This will return all objects whose "make" index value is
+either "BMW" or "Volkswagen". Available operations are:
+
+  * eq
+  * lt, lteq
+  * gt, gteq
+  * between, betweeq
+  * oneof
+
+It is possible to link queries with boolean operations, e.g.:
+
+  Index("make").eq("BMW")
+    .and(Index("model").eq("325i"))
+    .and(Index("year").lteq(1991))
+
+
+Getting results
+---------------
+
+Getting results from a query works very much like getting results from
+a single index in IndexedDB. You have the option of a cursor, e.g.:
+
+  let cars = [];
+  let store = transaction.objectStore("cars");
+  let request = query.openCursor(store);
+  request.onsuccess = function (event) {
+    let cursor = request.result;
+    if (cursor) {
+      cars.push(cursor.value);
+      cursor.continue();
+    }
+  }
+
+or simply getting all values at once:
+
+  let cars;
+  let request = query.getAll(store);
+  request.onsuccess = function (event) {
+    cars = request.result;
+  }
+
+`query.openKeyCursor` and `query.getAllKeys` are also available if
+just the keys are of interest.
