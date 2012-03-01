@@ -101,7 +101,7 @@ function compareKeys(keys, expectedKeys) {
   do_check_eq(arrayUnion(keys, expectedKeys).length, keys.length);
 }
 
-function add_query_tests(query, expectedKeys) {
+function test(query, expectedKeys) {
   add_test(function test_openCursor() {
     debug("Testing " + query + ".openCursor");
     let request = query.openCursor(openStore());
@@ -155,47 +155,77 @@ function run_tests() {
 /*** Tests start here ***/
 
 // eq
-add_query_tests(Index("make").eq("Chevrolet"),
-                []);
-add_query_tests(Index("make").eq("BMW"),
-                ["ECTO-1", "ECTO-2", "Cheesy"]);
+test(
+  Index("make").eq("Chevrolet"),
+  []
+);
+test(
+  Index("make").eq("BMW"),
+  ["ECTO-1", "ECTO-2", "Cheesy"]
+);
 
 // neq
-add_query_tests(Index("make").neq("BMW"),
-                ["Pikachubaru", "Ferdinand the Bug"]);
+test(
+  Index("make").neq("BMW"),
+  ["Pikachubaru", "Ferdinand the Bug"]
+);
 
 // lt
-add_query_tests(Index("year").lt(1970), //TODO 1971 fails on getAll?!?
-                []);
-add_query_tests(Index("year").lt(1983),  //TODO 1984 fails on getAll?!?
-                ["Ferdinand the Bug"]);
+test(
+  Index("year").lt(1970), //TODO 1971 fails on getAll?!?
+  []
+);
+test(
+  Index("year").lt(1983),  //TODO 1984 fails on getAll?!?
+  ["Ferdinand the Bug"]
+);
 
 // lteq
-add_query_tests(Index("year").lteq(1970),
-                []);
-add_query_tests(Index("year").lteq(1984),
-                ["Ferdinand the Bug", "Cheesy", "ECTO-2"]);
+test(
+  Index("year").lteq(1970),
+  []
+);
+test(
+  Index("year").lteq(1984),
+  ["Ferdinand the Bug", "Cheesy", "ECTO-2"]
+);
 
 // gt
-add_query_tests(Index("year").gt(2002), //TODO 2001 fails on getAll?!?
-                []);
-add_query_tests(Index("year").gt(2000),  //TODO 1984 fails on getAll?!?
-                ["Pikachubaru"]);
+test(
+  Index("year").gt(2002), //TODO 2001 fails on getAll?!?
+  []
+);
+test(
+  Index("year").gt(2000),  //TODO 1984 fails on getAll?!?
+  ["Pikachubaru"]
+);
 
 // gteq
-add_query_tests(Index("year").gteq(2002),
-                []);
-add_query_tests(Index("year").gteq(1989),
-                ["Pikachubaru", "ECTO-1"]);
+test(
+  Index("year").gteq(2002),
+  []
+);
+test(
+  Index("year").gteq(1989),
+  ["Pikachubaru", "ECTO-1"]
+);
 
 // oneof
-add_query_tests(Index("make").oneof("Chevrolet", "Ford"),
-                []);
-add_query_tests(Index("make").oneof("Volkswagen", "Subaru"),
-                ["Pikachubaru", "Ferdinand the Bug"]);
+test(
+  Index("make").oneof("Chevrolet", "Ford"),
+  []
+);
+test(
+  Index("make").oneof("Volkswagen", "Subaru"),
+  ["Pikachubaru", "Ferdinand the Bug"]
+);
 
 // Composite queries
-add_query_tests(Index("make").eq("BMW").and(Index("model").eq("325e")),
-                ["ECTO-2", "Cheesy"]);
-add_query_tests(Index("make").eq("Volkswagen").or(Index("make").eq("Subaru")),
-                ["Pikachubaru", "Ferdinand the Bug"]);
+test(
+  Index("make").eq("BMW").and(Index("model").eq("325e")),
+  ["ECTO-2", "Cheesy"]
+);
+test(
+  Index("make").eq("Volkswagen").or(Index("make").eq("Subaru")),
+  ["Pikachubaru", "Ferdinand the Bug"]
+);
