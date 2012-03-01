@@ -96,12 +96,14 @@ function openStore() {
 
 function compareKeys(keys, expectedKeys) {
   //TODO for now we don't care about order
+  debug("Comparing", keys, expectedKeys);
   do_check_eq(keys.length, expectedKeys.length);
   do_check_eq(arrayUnion(keys, expectedKeys).length, keys.length);
 }
 
 function add_query_tests(query, expectedKeys) {
-  add_test(function test_empty() {
+  add_test(function test_openCursor() {
+    debug("Testing " + query + ".openCursor");
     let request = query.openCursor(openStore());
     let keys = [];
     request.onsuccess = function onsuccess() {
@@ -114,6 +116,7 @@ function add_query_tests(query, expectedKeys) {
   });
 
   add_test(function test_openKeyCursor() {
+    debug("Testing " + query + ".openKeyCursor");
     let request = query.openKeyCursor(openStore());
     let keys = [];
     request.onsuccess = function onsuccess() {
@@ -126,6 +129,7 @@ function add_query_tests(query, expectedKeys) {
   });
 
   add_test(function test_getAll() {
+    debug("Testing " + query + ".getAll");
     let request = query.getAll(openStore());
     request.onsuccess = function onsuccess() {
       let keys = request.result.map(function (item) { return item.name; });
@@ -134,6 +138,7 @@ function add_query_tests(query, expectedKeys) {
   });
 
   add_test(function test_getAllKeys() {
+    debug("Testing " + query + ".getAllKeys");
     let request = query.getAllKeys(openStore());
     request.onsuccess = function onsuccess() {
       compareKeys(request.result, expectedKeys);
@@ -149,11 +154,20 @@ function run_tests() {
 
 /*** Tests start here ***/
 
+// eq
 add_query_tests(Index("make").eq("Chevrolet"),
                 []);
 add_query_tests(Index("make").eq("BMW"),
                 ["ECTO-1", "ECTO-2", "Cheesy"]);
+
+// neq
+add_query_tests(Index("make").neq("BMW"),
+                ["Pikachubaru", "Ferdinand the Bug"]);
+
+// Composite queries
 add_query_tests(Index("make").eq("BMW").and(Index("model").eq("325e")),
                 ["ECTO-2", "Cheesy"]);
+add_query_tests(Index("make").eq("Volkswagen").or(Index("make").eq("Subaru")),
+                ["Pikachubaru", "Ferdinand the Bug"]);
 add_query_tests(Index("make").oneof("Volkswagen", "Subaru"),
                 ["Pikachubaru", "Ferdinand the Bug"]);

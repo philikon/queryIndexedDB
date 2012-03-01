@@ -139,7 +139,14 @@ function Query(queryFunc, toString) {
   return query;
 };
 
-function IndexQuery(indexName, op, values) {
+function IndexQuery(indexName, operation, values) {
+  let negate = false;
+  let op = operation;
+  if (op == "neq") {
+    op = "eq";
+    negate = true;
+  }
+
   function makeRange() {
     let range;
     switch (op) {
@@ -172,12 +179,6 @@ function IndexQuery(indexName, op, values) {
   }
 
   function queryKeys(store, callback) {
-    let negate = false;
-    if (op == "neq") {
-      op = "eq";
-      negate = true;
-    }
-
     let index = store.index(indexName);
     let range = makeRange();
     let request = index.getAllKeys(range);
@@ -198,11 +199,9 @@ function IndexQuery(indexName, op, values) {
     };
   }
 
+  let args = arguments;
   function toString() {
-    let args = Array.slice(values);
-    args.unshift(op);
-    args.unshift(indexName);
-    return "IndexQuery(" + args.toSource().slice(1, -1) + ")";
+    return "IndexQuery(" + Array.slice(args).toSource().slice(1, -1) + ")";
   }
 
   return Query(queryKeys, toString);
