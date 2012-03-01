@@ -94,6 +94,29 @@ function openStore() {
   return store;
 }
 
+function add_query_tests(query, result_onsuccess, array_onsuccess) {
+  add_test(function test_empty() {
+    let request = query.openCursor(openStore());
+    request.onsuccess = result_onsuccess;
+  });
+
+  add_test(function test_openKeyCursor() {
+    let request = query.openKeyCursor(openStore());
+    request.onsuccess = result_onsuccess;
+  });
+
+  add_test(function test_getAll() {
+    let request = query.getAll(openStore());
+    request.onsuccess = array_onsuccess;
+  });
+
+  add_test(function test_getAllKeys() {
+    let request = query.getAllKeys(openStore());
+    request.onsuccess = array_onsuccess;
+  });
+
+}
+
 function run_tests() {
   populateDB(run_next_test);
 }
@@ -109,26 +132,9 @@ function empty_array_onsuccess(event) {
   do_check_eq(event.target.result.length, 0);
 }
 
-add_test(function test_empty_openCursor() {
-  let request = empty_query.openCursor(openStore());
-  request.onsuccess = empty_result_onsuccess;
-});
-
-add_test(function test_empty_openKeyCursor() {
-  let request = empty_query.openKeyCursor(openStore());
-  request.onsuccess = empty_result_onsuccess;
-});
-
-add_test(function test_empty_getAll() {
-  let request = empty_query.getAll(openStore());
-  request.onsuccess = empty_array_onsuccess;
-});
-
-add_test(function test_empty_getAllKeys() {
-  let request = empty_query.getAllKeys(openStore());
-  request.onsuccess = empty_array_onsuccess;
-});
-
+add_query_tests(empty_query,
+                empty_result_onsuccess,
+                empty_array_onsuccess);
 
 
 add_test(function test_and_openCursor() {
