@@ -94,25 +94,50 @@ function openStore() {
   return store;
 }
 
-function add_query_tests(query, result_onsuccess, array_onsuccess) {
+function compareKeys(keys, expectedKeys) {
+  //TODO for now we don't care about order
+  do_check_eq(keys.length, expectedKeys.length);
+  do_check_eq(arrayUnion(keys, expectedKeys).length, keys.length);
+}
+
+function add_query_tests(query, expectedKeys) {
   add_test(function test_empty() {
     let request = query.openCursor(openStore());
-    request.onsuccess = result_onsuccess;
+    let keys = [];
+    request.onsuccess = function onsuccess() {
+      if (request.result == undefined) {
+        compareKeys(keys, expectedKeys);
+        return;
+      }
+      keys.push(request.result.name);
+    };
   });
 
   add_test(function test_openKeyCursor() {
     let request = query.openKeyCursor(openStore());
-    request.onsuccess = result_onsuccess;
+    let keys = [];
+    request.onsuccess = function onsuccess() {
+      if (request.result == undefined) {
+        compareKeys(keys, expectedKeys);
+        return;
+      }
+      keys.push(request.result);
+    };
   });
 
   add_test(function test_getAll() {
     let request = query.getAll(openStore());
-    request.onsuccess = array_onsuccess;
+    request.onsuccess = function onsuccess() {
+      let keys = request.result.map(function (item) { return item.name; });
+      compareKeys(keys, expectedKeys);
+    };
   });
 
   add_test(function test_getAllKeys() {
     let request = query.getAllKeys(openStore());
-    request.onsuccess = array_onsuccess;
+    request.onsuccess = function onsuccess() {
+      compareKeys(request.result, expectedKeys);
+    };
   });
 
 }
@@ -124,51 +149,11 @@ function run_tests() {
 
 /*** Tests start here ***/
 
-let empty_query = Index("make").eq("Chevrolet");
-function empty_result_onsuccess(event) {
-  do_check_eq(event.target.result, undefined);
-}
-function empty_array_onsuccess(event) {
-  do_check_eq(event.target.result.length, 0);
-}
-
-add_query_tests(empty_query,
-                empty_result_onsuccess,
-                empty_array_onsuccess);
-
-
-add_test(function test_and_openCursor() {
-  let store = openStore();
-  let request = Index("make").eq("BMW")
-                  .and(Index("model").eq("325e")).openCursor(store);
-  request.onsuccess = function () {
-    let cursor = request.result;
-    if (cursor) {
-      console.log(cursor.value);
-      cursor.continue();
-    }
-  };
-});
-
-add_test(function test_and_getAll() {
-  let store = openStore();
-  let request = Index("make").eq("BMW")
-                  .and(Index("model").eq("325e")).getAll(store);
-  request.onsuccess = function () {
-    console.log(request.result);
-  };
-});
-
-add_test(function test_oneof_openCursor() {
-  let store = openStore();
-  let request = Index("make").oneof("Volkswagen", "Subaru").openCursor(store);
-  request.onsuccess = function () {
-    let cursor = request.result;
-    if (!cursor) {
-      run_next_test();
-    } else {
-      console.log(cursor.value);
-      cursor.continue();
-    }
-  };
-});
+add_query_tests(Index("make").eq("Chevrolet"),
+                []);
+add_query_tests(Index("make").eq("BMW"),
+                ["ECTO-1", "ECTO-2", "Cheesy"]);
+add_query_tests(Index("make").eq("BMW").and(Index("model").eq("325e")),
+                ["ECTO-2", "Cheesy"]);
+add_query_tests(Index("make").oneof("Volkswagen", "Subaru"),
+                ["Pikachubaru", "Ferdinand the Bug"]);
