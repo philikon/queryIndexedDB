@@ -29,7 +29,7 @@ function Index(name) {
 }
 
 function notifySuccess(request, result) {
-  let event = {target: request}; //TODO complete
+  let event = {target: request}; //TODO complete event interface
   request.readyState = IDBRequest.DONE;
   request.result = result;
   if (typeof request.onsuccess == "function") {
@@ -39,7 +39,6 @@ function notifySuccess(request, result) {
 
 function Cursor(store, request, keys, keyOnly) {
   let cursor = {
-    //TODO complete
     continue: function continue_() {
       if (!keys.length) {
         notifySuccess(request, undefined);
@@ -58,17 +57,18 @@ function Cursor(store, request, keys, keyOnly) {
         notifySuccess(request, cursor);
       };
     }
+    //TODO complete cursor interface
   };
   return cursor;
 }
 
 function Request() {
-  // TODO complete
   return {
     result: undefined,
     onsuccess: null,
     onerror: null,
     readyState: IDBRequest.LOADING
+    // TODO complete request interface
   };
 }
 
