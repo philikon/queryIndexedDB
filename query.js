@@ -105,7 +105,7 @@ function ResultRequest(store, queryFunc, keyOnly) {
   return request;
 }
 
-function Query(queryFunc) {
+function Query(queryFunc, toString) {
 
   let query = {
     _queryFunc: queryFunc,
@@ -132,7 +132,9 @@ function Query(queryFunc) {
 
     getAllKeys: function getAllKeys(store) {
       return ResultRequest(store, queryFunc, true);
-    }
+    },
+
+    toString: toString
   };
   return query;
 };
@@ -196,7 +198,14 @@ function IndexQuery(indexName, op, values) {
     };
   }
 
-  return Query(queryKeys);
+  function toString() {
+    let args = Array.slice(values);
+    args.unshift(op);
+    args.unshift(indexName);
+    return "IndexQuery(" + args.toSource().slice(1, -1) + ")";
+  }
+
+  return Query(queryKeys, toString);
 }
 
 function Intersection(query1, query2) {
@@ -207,7 +216,12 @@ function Intersection(query1, query2) {
       });
     });
   }
-  return Query(queryKeys);
+
+  function toString() {
+    return "Intersection(" + query1.toString() + ", " + query2.toString() + ")";
+  }
+
+  return Query(queryKeys, toString);
 }
 
 function Union(query1, query2) {
@@ -218,7 +232,12 @@ function Union(query1, query2) {
       });
     });
   }
-  return Query(queryKeys);
+
+  function toString() {
+    return "Union(" + query1.toString() + ", " + query2.toString() + ")";
+  }
+
+  return Query(queryKeys, toString);
 }
 
 
