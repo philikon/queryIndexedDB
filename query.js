@@ -5,7 +5,7 @@
 function Index(name) {
   function queryMaker(op) {
     return function () {
-      return Query(name, op, arguments);
+      return IndexQuery(name, op, arguments);
     };
   }
   return {
@@ -19,74 +19,125 @@ function Index(name) {
     betweeq: queryMaker("betweeq"),
     oneof:   function oneof() {
       let values = Array.slice(arguments);
-      let query = Index(name, "eq", [values.shift()]);
+      let query = IndexQuery(name, "eq", [values.shift()]);
       while (values.length) {
-        query = query.or(Index(name, "eq", [values.shift()]));
+        query = query.or(IndexQuery(name, "eq", [values.shift()]));
       }
       return query;
     }
   };
 }
 
-function newRequest() {
-  // TODO do we need anything else?
-  return {};
-}
+function notifySuccess(request, result) {
+  let event = {target: request}; //TODO complete
+  request.readyState = IDBRequest.DONE;
+  request.result = result;
+  if (typeof request.onsuccess == "function") {
+    request.onsuccess(event);
+  }
+};
 
-let BaseQuery = {
-  and: function and(query2) {
-    return Intersection(this, query2);
-  },
-
-  or: function or(query2) {
-    return Union(this, query2);
-  },
-
-  query: function query(store) {
-    let request = newRequest();
-    let keys;
-    let event = {target: request}; //TODO type? what else?
-    request.continue = function continue_() {
-      if (!keys) {
-        throw "XXX TODO";
+function Cursor(store, request, keys, keyOnly) {
+  let cursor = {
+    //TODO complete
+    continue: function continue_() {
+      if (!keys.length) {
+        notifySuccess(request, undefined);
+        return;
       }
       let key = keys.shift();
-      if (!key) {
-        request.result = undefined;
-        request.onsuccess(event);
+      if (keyOnly) {
+        cursor.key = key;
+        notifySuccess(request, cursor);
         return;
       }
       let r = store.get(key);
       r.onsuccess = function onsuccess() {
-        request.key = key;
-        request.result = r.result;
-        request.onsuccess(event);
+        cursor.key = key;
+        cursor.value = r.result;
+        notifySuccess(request, cursor);
       };
-    };
-    this.queryKeys(store, function (result) {
-      keys = result;
-      request.contine();
-    });
-    return request;
-  },
+    }
+  };
+  return cursor;
+}
 
-  queryKeys: function queryKeys() {
-    //TODO writeme
-  },
+function Request() {
+  // TODO complete
+  return {
+    result: undefined,
+    onsuccess: null,
+    onerror: null,
+    readyState: IDBRequest.LOADING
+  };
+}
 
-  queryAll: function queryAll(store) {
-    //TODO writeme
-  }
+function CursorRequest(store, queryFunc, keyOnly) {
+  let request = Request();
+  queryFunc(store, function (keys) {
+    let cursor = Cursor(store, request, keys, keyOnly);
+    cursor.continue();
+  });
+  return request;
+}
+
+function ResultRequest(store, queryFunc, keyOnly) {
+  let request = Request();
+  queryFunc(store, function (keys) {
+    if (keyOnly || !keys.length) {
+      notifySuccess(request, keys);
+      return;
+    }
+    let results = [];
+    function getNext() {
+      let r = store.get(keys.shift());
+      r.onsuccess = function onsuccess() {
+        results.push(r.result);
+        if (!keys.length) {
+          notifySuccess(request, results);
+          return;
+        }
+        getNext();
+      };
+    }
+    getNext();
+  });
+  return request;
+}
+
+function Query(queryFunc) {
+
+  let query = {
+    _queryFunc: queryFunc,
+
+    and: function and(query2) {
+      return Intersection(query, query2);
+    },
+
+    or: function or(query2) {
+      return Union(query, query2);
+    },
+
+    openCursor: function openCursor(store) {
+      return CursorRequest(store, queryFunc, false);
+    },
+
+    openKeyCursor: function openKeyCursor(store) {
+      return CursorRequest(store, queryFunc, true);
+    },
+
+    getAll: function getAll(store) {
+      return ResultRequest(store, queryFunc, false);
+    },
+
+    getAllKeys: function getAllKeys(store) {
+      return ResultRequest(store, queryFunc, true);
+    }
+  };
+  return query;
 };
 
-function Query(index, op, values) {
-  function compositeQueryMaker(conj) {
-    return function (query2) {
-      let query1 = this;
-      return CompositeQuery(query1, conj, query2);
-    };
-  }
-
+function IndexQuery(indexName, op, values) {
   function makeRange() {
     let range;
     switch (op) {
@@ -118,62 +169,56 @@ function Query(index, op, values) {
     return range;
   }
 
-  return {
-    __proto__: BaseQuery,
+  function queryKeys(store, callback) {
+    let negate = false;
+    if (op == "neq") {
+      op = "eq";
+      negate = true;
+    }
 
-    queryKeys: function queryKeys(store, callback) {
-      let negate = false;
-      if (op == "neq") {
-        op = "eq";
-        negate = true;
+    let index = store.index(indexName);
+    let range = makeRange();
+    let request = index.getAllKeys(range);
+    request.onsuccess = function onsuccess(event) {
+      let result = request.result;
+      if (!negate) {
+        callback(result);
+        return;
       }
 
-      let index = store.index(this.index);
-      let range = makeRange();
-      let request = index.getAllKeys(range);
+      // Deal with the negation case. This means we fetch all keys and then
+      // subtract the original result from it.
+      request = index.getAllKeys();
       request.onsuccess = function onsuccess(event) {
-        let result = request.result;
-        if (!negate) {
-          callback(result);
-          return;
-        }
-
-        // Deal with the negation case. This means we fetch all keys and then
-        // subtract the original result from it.
-        request = index.getAllKeys();
-        request.onsuccess = function onsuccess(event) {
-          let all = request.result;
-          callback(arraySub(all, result));
-        };
+        let all = request.result;
+        callback(arraySub(all, result));
       };
-    }
-  };
+    };
+  }
+
+  return Query(queryKeys);
 }
 
 function Intersection(query1, query2) {
-  return {
-    __proto__: BaseQuery,
-    queryKeys: function queryKeys(store, callback) {
-      query1.queryKeys(store, function (keys1) {
-        query2.queryKeys(store, function (keys2) {
-          callback(arrayIntersection(keys1, keys2));
-        });
+  function queryKeys(store, callback) {
+    query1._queryFunc(store, function (keys1) {
+      query2._queryFunc(store, function (keys2) {
+        callback(arrayIntersect(keys1, keys2));
       });
-    }
-  };
+    });
+  }
+  return Query(queryKeys);
 }
 
 function Union(query1, query2) {
-  return {
-    __proto__: BaseQuery,
-    queryKeys: function queryKeys(store, callback) {
-      query1.queryKeys(store, function (keys1) {
-        query2.queryKeys(store, function (keys2) {
-          callback(arrayUnion(keys1, keys2));
-        });
+  function queryKeys(store, callback) {
+    query1._queryFunc(store, function (keys1) {
+      query2._queryFunc(store, function (keys2) {
+        callback(arrayUnion(keys1, keys2));
       });
-    }
-  };
+    });
+  }
+  return Query(queryKeys);
 }
 
 
