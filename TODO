@@ -4,3 +4,11 @@ TODO
 * limits
 * ordered results
 * test perf
+* investigate different strategies for filtering
+* investigate using (or at least supporting) workers for CPU-bound tasks
+* 'startswith' comparison for strings
+
+Separate/additional library:
+
+* indexing helpers (e.g. for full text searching, case folding, etc.)
+* query plan optimizer
