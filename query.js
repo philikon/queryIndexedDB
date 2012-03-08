@@ -2,6 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/**
+ * Represents a queriable index. Call methods on the returned object
+ * to create queries.
+ *
+ * Example:
+ *
+ *   let query = Index("make").eq("BMW");
+ *
+ */
 function Index(name) {
   function queryMaker(op) {
     return function () {
@@ -28,6 +37,10 @@ function Index(name) {
   };
 }
 
+/**
+ * Helper that notifies a 'success' event on a request, with a given
+ * result object. This is typically either a cursor or a result array.
+ */
 function notifySuccess(request, result) {
   let event = {type: "success",
                target: request}; //TODO complete event interface
@@ -38,6 +51,9 @@ function notifySuccess(request, result) {
   }
 };
 
+/**
+ * Create a cursor object.
+ */
 function Cursor(store, request, keys, keyOnly) {
   let cursor = {
     continue: function continue_() {
@@ -63,6 +79,9 @@ function Cursor(store, request, keys, keyOnly) {
   return cursor;
 }
 
+/**
+ * Create a request object.
+ */
 function Request() {
   return {
     result: undefined,
@@ -73,6 +92,12 @@ function Request() {
   };
 }
 
+/**
+ * Create a request that will receive a cursor.
+ *
+ * This will also kick off the query, instantiate the Cursor when the
+ * results are available, and notify the first 'success' event.
+ */
 function CursorRequest(store, queryFunc, keyOnly) {
   let request = Request();
   queryFunc(store, function (keys) {
@@ -82,6 +107,12 @@ function CursorRequest(store, queryFunc, keyOnly) {
   return request;
 }
 
+/**
+ * Create a request that will receive a result array.
+ *
+ * This will also kick off the query, build up the result array, and
+ * notify the 'success' event.
+ */
 function ResultRequest(store, queryFunc, keyOnly) {
   let request = Request();
   queryFunc(store, function (keys) {
@@ -106,9 +137,16 @@ function ResultRequest(store, queryFunc, keyOnly) {
   return request;
 }
 
+/**
+ * Provide a generic way to create a query object from a query function.
+ * Depending on the implementation of that query function, the query could
+ * produce results from an index, combine results from other queries, etc.
+ */
 function Query(queryFunc, toString) {
 
   let query = {
+
+    // Sadly we need to expose this to make Intersection and Union work :(
     _queryFunc: queryFunc,
 
     and: function and(query2) {
@@ -140,6 +178,9 @@ function Query(queryFunc, toString) {
   return query;
 };
 
+/**
+ * Create a query object that queries an index.
+ */
 function IndexQuery(indexName, operation, values) {
   let negate = false;
   let op = operation;
@@ -206,6 +247,9 @@ function IndexQuery(indexName, operation, values) {
   return Query(queryKeys, toString);
 }
 
+/**
+ * Create a query object that performs the intersection of two given queries.
+ */
 function Intersection(query1, query2) {
   function queryKeys(store, callback) {
     query1._queryFunc(store, function (keys1) {
@@ -222,6 +266,9 @@ function Intersection(query1, query2) {
   return Query(queryKeys, toString);
 }
 
+/**
+ * Create a query object that performs the union of two given queries.
+ */
 function Union(query1, query2) {
   function queryKeys(store, callback) {
     query1._queryFunc(store, function (keys1) {
