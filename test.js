@@ -172,11 +172,11 @@ test(
 
 // lt
 test(
-  Index("year").lt(1970), //TODO 1971 fails on getAll?!?
+  Index("year").lt(1971), //TODO 1971 fails on getAll?!?
   []
 );
 test(
-  Index("year").lt(1983),  //TODO 1984 fails on getAll?!?
+  Index("year").lt(1984),  //TODO 1984 fails on getAll?!?
   ["Ferdinand the Bug"]
 );
 
@@ -192,11 +192,11 @@ test(
 
 // gt
 test(
-  Index("year").gt(2002), //TODO 2001 fails on getAll?!?
+  Index("year").gt(2001),
   []
 );
 test(
-  Index("year").gt(2000),  //TODO 1984 fails on getAll?!?
+  Index("year").gt(1989),
   ["Pikachubaru"]
 );
 
