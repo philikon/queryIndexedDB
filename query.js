@@ -29,7 +29,8 @@ function Index(name) {
 }
 
 function notifySuccess(request, result) {
-  let event = {target: request}; //TODO complete event interface
+  let event = {type: "success",
+               target: request}; //TODO complete event interface
   request.readyState = IDBRequest.DONE;
   request.result = result;
   if (typeof request.onsuccess == "function") {
